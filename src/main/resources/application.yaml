@@ -1,6 +1,6 @@
 spring:
   application:
-    name: tinkoff-invest
+    name: tinkoff-robot-trader
   profiles:
     active: local
 
