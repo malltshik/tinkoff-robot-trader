@@ -2,7 +2,7 @@ package ru.malltshik.trobot.services.candle;
 
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import ru.malltshik.trobot.BaseIntegrationTest;
+import ru.malltshik.trobot.BaseIT;
 import ru.malltshik.trobot.entities.Candle;
 import ru.tinkoff.invest.openapi.models.market.CandleInterval;
 
@@ -12,7 +12,7 @@ import java.time.ZonedDateTime;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class JpaCandleServiceIT extends BaseIntegrationTest {
+public class JpaCandleServiceIT extends BaseIT {
 
     @Autowired
     private JpaCandleService candleService;

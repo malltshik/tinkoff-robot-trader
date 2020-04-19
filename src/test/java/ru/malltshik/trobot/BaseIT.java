@@ -12,7 +12,7 @@ import ru.tinkoff.invest.openapi.OpenApi;
 @SpringBootTest
 @ActiveProfiles("test")
 @RunWith(SpringRunner.class)
-public abstract class BaseIntegrationTest {
+public abstract class BaseIT {
 
     @Bean
     @Primary

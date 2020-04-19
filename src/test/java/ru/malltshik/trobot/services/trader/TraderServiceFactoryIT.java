@@ -4,14 +4,16 @@ import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import org.springframework.beans.factory.annotation.Autowired;
-import ru.malltshik.trobot.BaseIntegrationTest;
+import ru.malltshik.trobot.BaseIT;
 
 import java.util.Optional;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class TraderServiceFactoryIT extends BaseIntegrationTest {
+public class TraderServiceFactoryIT extends BaseIT {
 
     @Autowired
     private TraderServiceFactory traderServiceFactory;
