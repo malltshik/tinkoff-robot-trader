@@ -1,4 +1,4 @@
-package ru.malltshik.invest.properties;
+package ru.malltshik.trobot.properties;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;

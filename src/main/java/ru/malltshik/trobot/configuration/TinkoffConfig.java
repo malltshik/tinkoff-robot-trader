@@ -1,19 +1,24 @@
-package ru.malltshik.invest.configuration;
+package ru.malltshik.trobot.configuration;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.reactivestreams.Subscriber;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
-import ru.malltshik.invest.properties.TinkoffProps;
+import ru.malltshik.trobot.properties.TinkoffProps;
 import ru.tinkoff.invest.openapi.OpenApi;
 import ru.tinkoff.invest.openapi.SandboxOpenApi;
 import ru.tinkoff.invest.openapi.models.sandbox.CurrencyBalance;
 import ru.tinkoff.invest.openapi.models.sandbox.PositionBalance;
+import ru.tinkoff.invest.openapi.models.streaming.StreamingEvent;
 import ru.tinkoff.invest.openapi.okhttp.OkHttpOpenApiFactory;
 
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -25,7 +30,10 @@ import static java.lang.String.format;
 
 @Slf4j
 @Configuration
+@RequiredArgsConstructor
 public class TinkoffConfig {
+
+    private final List<Subscriber<StreamingEvent>> listeners;
 
     @Bean
     public Logger logger(TinkoffProps props) {
@@ -33,7 +41,7 @@ public class TinkoffConfig {
     }
 
     @Bean
-    @ConditionalOnProperty(value = "tinkoff.sandbox", havingValue = "true")
+    @ConditionalOnProperty(value = "tinkoff.sandbox", havingValue = "true", matchIfMissing = true)
     public ExecutorService sandboxThreadPoolExecutor() {
         return Executors.newSingleThreadExecutor();
     }
@@ -59,15 +67,18 @@ public class TinkoffConfig {
     }
 
     @Bean
+    @Profile("!test")
     @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
     public OpenApi openApi(TinkoffProps props, ExecutorService executor, OkHttpOpenApiFactory factory) {
+        OpenApi api;
         if (props.isSandbox()) {
-            SandboxOpenApi api = factory.createSandboxOpenApiClient(executor);
-            configureSandboxApi(props, api);
-            return api;
+            api = factory.createSandboxOpenApiClient(executor);
+            configureSandboxApi(props, (SandboxOpenApi) api);
         } else {
-            return factory.createOpenApiClient(executor);
+            api = factory.createOpenApiClient(executor);
         }
+        listeners.forEach(l -> api.getStreamingContext().getEventPublisher().subscribe(l));
+        return api;
     }
 
     private void configureSandboxApi(TinkoffProps props, SandboxOpenApi api) {

@@ -1,4 +1,4 @@
-package ru.malltshik.invest.configuration;
+package ru.malltshik.trobot.configuration;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Value;
