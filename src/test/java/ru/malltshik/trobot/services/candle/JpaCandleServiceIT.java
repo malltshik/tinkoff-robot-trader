@@ -1,6 +1,5 @@
 package ru.malltshik.trobot.services.candle;
 
-import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import ru.malltshik.trobot.BaseIntegrationTest;

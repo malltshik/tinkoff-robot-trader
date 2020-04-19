@@ -4,10 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import ru.malltshik.trobot.entities.Candle;
-import ru.malltshik.trobot.services.CandleService;
 
 import javax.transaction.Transactional;
-import java.util.Date;
 
 @Slf4j
 @Component

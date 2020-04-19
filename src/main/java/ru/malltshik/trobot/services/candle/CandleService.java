@@ -1,4 +1,4 @@
-package ru.malltshik.trobot.services;
+package ru.malltshik.trobot.services.candle;
 
 import ru.malltshik.trobot.entities.Candle;
 

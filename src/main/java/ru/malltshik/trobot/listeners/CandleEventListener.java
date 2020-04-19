@@ -9,7 +9,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import ru.malltshik.trobot.events.NextCandleSavedEvent;
 import ru.malltshik.trobot.entities.Candle;
-import ru.malltshik.trobot.services.CandleService;
+import ru.malltshik.trobot.services.candle.CandleService;
 import ru.tinkoff.invest.openapi.models.streaming.StreamingEvent;
 
 @Slf4j
