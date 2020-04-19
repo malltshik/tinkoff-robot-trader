@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: tinkoff-robot-trader
+  profiles:
+    active: test
+  datasource:
+    url: jdbc:tc:postgresql:11:///trobot-test
+    username: postgres
+    password: postgres
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+  flyway:
+    clean-disabled: true
