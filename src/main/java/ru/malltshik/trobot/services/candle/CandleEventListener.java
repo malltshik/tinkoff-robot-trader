@@ -1,4 +1,4 @@
-package ru.malltshik.trobot.listeners;
+package ru.malltshik.trobot.services.candle;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -7,9 +7,8 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
-import ru.malltshik.trobot.events.NextCandleSavedEvent;
 import ru.malltshik.trobot.entities.Candle;
-import ru.malltshik.trobot.services.candle.CandleService;
+import ru.malltshik.trobot.services.candle.events.NextCandleReceivedEvent;
 import ru.tinkoff.invest.openapi.models.streaming.StreamingEvent;
 
 @Slf4j
@@ -18,8 +17,8 @@ import ru.tinkoff.invest.openapi.models.streaming.StreamingEvent;
 public class CandleEventListener implements Subscriber<StreamingEvent.Candle> {
 
     private final ModelMapper mapper;
-    private final CandleService candleService;
     private final ApplicationEventPublisher eventPublisher;
+    private final CandleService candleService;
 
     @Override
     public void onSubscribe(Subscription subscription) {
@@ -30,7 +29,7 @@ public class CandleEventListener implements Subscriber<StreamingEvent.Candle> {
     public void onNext(StreamingEvent.Candle candle) {
         Candle entity = mapper.map(candle, Candle.class);
         Candle saved = candleService.save(entity);
-        eventPublisher.publishEvent(new NextCandleSavedEvent(saved));
+        eventPublisher.publishEvent(new NextCandleReceivedEvent(saved));
     }
 
     @Override
