@@ -20,8 +20,7 @@
         <model-mapper.version>2.3.7</model-mapper.version>
 
         <!-- props -->
-        <skip.unit.tests>false</skip.unit.tests>
-        <skip.integration.tests>true</skip.integration.tests>
+        <skipITs>true</skipITs>
     </properties>
 
     <dependencies>
@@ -163,7 +162,7 @@
                 </dependencies>
                 <configuration>
                     <argLine>-Dfile.encoding=UTF-8 -Xmx512m</argLine>
-                    <skipITs>${skip.integration.tests}</skipITs>
+                    <skipITs>${skipITs}</skipITs>
                 </configuration>
                 <executions>
                     <execution>

@@ -37,8 +37,8 @@ public class InMemoryTraderServiceFactory implements TraderServiceFactory {
             log.info("Trader already exists. Return from registry cache {}", trader.get());
             return trader.get();
         } else {
-            TraderService bean = STORE.put(figi, context.getBean(TraderService.class, figi));
-            Objects.requireNonNull(bean);
+            TraderService bean = context.getBean(TraderService.class, figi);
+            STORE.put(figi, bean);
             log.info("New trader has been registered {}", bean);
             return bean;
         }
