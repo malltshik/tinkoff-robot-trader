@@ -7,6 +7,6 @@ spring:
     url: jdbc:postgresql://localhost:5432/trobot
     username: postgres
     password: postgres
-    driver-cl1ass-name: org.postgresql.Driver
+    driver-class-name: org.postgresql.Driver
 
 
