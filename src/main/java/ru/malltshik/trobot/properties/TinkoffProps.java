@@ -31,19 +31,28 @@ public class TinkoffProps {
     private boolean sandbox = true;
 
     /**
+     * Broker tax
+     */
+    private double brokerTax = 0.3;
+
+    /**
+     * Country tax
+     */
+    private double countryTax = 13;
+
+    /**
      * Sandbox init currencies
      */
     private List<CurrencyBalance> currencyBalances = new ArrayList<>();
 
     /**
-     * Sandbox init instruments
-     */
-    private List<PositionBalance> positionBalance = new ArrayList<>();
-
-    /**
      * Thread pool configuration for tinkoff OpenAPI
      */
     private ThreadPoolConfig threadPoolConfig;
+
+    public double getTaxes() {
+        return brokerTax + countryTax;
+    }
 
     @Data
     public static class ThreadPoolConfig {
@@ -73,11 +82,5 @@ public class TinkoffProps {
     public static class CurrencyBalance {
         private Currency currency;
         private BigDecimal balance;
-    }
-
-    @Data
-    public static class PositionBalance {
-        private String figi;
-        private BigDecimal lots;
     }
 }

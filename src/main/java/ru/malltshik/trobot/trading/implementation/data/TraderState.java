@@ -4,10 +4,10 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ru.malltshik.trobot.entities.TraderConfig;
-import ru.malltshik.trobot.enums.TraderStatus;
+import ru.malltshik.trobot.persistance.entities.TraderConfig;
+import ru.malltshik.trobot.trading.implementation.data.enums.TraderStatus;
 import ru.tinkoff.invest.openapi.models.market.Instrument;
-import ru.tinkoff.invest.openapi.models.streaming.StreamingEvent;
+import ru.tinkoff.invest.openapi.models.market.Orderbook;
 
 
 @Data
@@ -15,8 +15,9 @@ import ru.tinkoff.invest.openapi.models.streaming.StreamingEvent;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TraderState {
-    private Instrument instrument;
-    private StreamingEvent.InstrumentInfo info;
     private TraderConfig config;
     private TraderStatus status;
+    private Instrument instrument;
+    private Orderbook lastOrderbook;
+    private AnalyticReport lastReport;
 }

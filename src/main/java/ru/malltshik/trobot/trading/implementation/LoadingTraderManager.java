@@ -6,17 +6,18 @@ import com.github.benmanes.caffeine.cache.RemovalListener;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
-import ru.malltshik.trobot.entities.TraderConfig;
 import ru.malltshik.trobot.exceptions.InstrumentNotFoundException;
-import ru.malltshik.trobot.repositories.TraderConfigRepository;
+import ru.malltshik.trobot.persistance.entities.TraderConfig;
+import ru.malltshik.trobot.persistance.repositories.TraderConfigRepository;
 import ru.malltshik.trobot.trading.Trader;
 import ru.malltshik.trobot.trading.TraderManager;
 import ru.tinkoff.invest.openapi.OpenApi;
 import ru.tinkoff.invest.openapi.models.market.Instrument;
 
-import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -37,7 +38,7 @@ public class LoadingTraderManager implements TraderManager {
     private AsyncLoadingCache<Long, Trader> cache;
     private Set<Long> keys = new HashSet<>();
 
-    @PostConstruct
+    @EventListener(ApplicationReadyEvent.class)
     public void initialize() {
         this.cache = Caffeine.newBuilder()
                 .removalListener((RemovalListener<Long, Trader>) (key, value, cause) -> {

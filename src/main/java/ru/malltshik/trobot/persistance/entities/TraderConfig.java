@@ -1,4 +1,4 @@
-package ru.malltshik.trobot.entities;
+package ru.malltshik.trobot.persistance.entities;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

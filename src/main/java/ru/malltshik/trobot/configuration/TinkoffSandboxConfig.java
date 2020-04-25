@@ -12,12 +12,10 @@ import ru.malltshik.trobot.properties.TinkoffProps;
 import ru.tinkoff.invest.openapi.OpenApi;
 import ru.tinkoff.invest.openapi.SandboxOpenApi;
 import ru.tinkoff.invest.openapi.models.sandbox.CurrencyBalance;
-import ru.tinkoff.invest.openapi.models.sandbox.PositionBalance;
 import ru.tinkoff.invest.openapi.models.streaming.StreamingEvent;
 import ru.tinkoff.invest.openapi.okhttp.OkHttpOpenApiFactory;
 
 import java.util.concurrent.ExecutorService;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics.monitor;
@@ -30,7 +28,6 @@ import static java.util.logging.Logger.getLogger;
 @ConditionalOnProperty(value = "tinkoff.sandbox", havingValue = "true", matchIfMissing = true)
 public class TinkoffSandboxConfig {
 
-    private final Subscriber<StreamingEvent> listener;
     private final TinkoffProps props;
 
     @Bean
@@ -48,20 +45,19 @@ public class TinkoffSandboxConfig {
 
     @Bean
     @Sandbox
-    public OpenApi sandboxOpenApi(OkHttpOpenApiFactory factory, @Sandbox ExecutorService executor) {
+    public OpenApi sandboxOpenApi(@Sandbox ExecutorService executor,
+                                  OkHttpOpenApiFactory factory,
+                                  Subscriber<StreamingEvent> listener) {
         SandboxOpenApi api = factory.createSandboxOpenApiClient(executor);
         api.getSandboxContext().performRegistration(null).join();
-        api.getSandboxContext().clearAll(null);
+        api.getSandboxContext().clearAll(null).join();
 
         props.getCurrencyBalances().stream()
                 .map(c -> new CurrencyBalance(c.getCurrency(), c.getBalance()))
-                .forEach(c -> api.getSandboxContext().setCurrencyBalance(c, null));
-
-        props.getPositionBalance().stream()
-                .map(p -> new PositionBalance(p.getFigi(), p.getLots()))
-                .forEach(p -> api.getSandboxContext().setPositionBalance(p, null));
+                .forEach(c -> api.getSandboxContext().setCurrencyBalance(c, null).join());
 
         api.getStreamingContext().getEventPublisher().subscribe(listener);
+
         return api;
     }
 

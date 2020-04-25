@@ -15,7 +15,7 @@ public class ModelMapperConfig {
 
     @Bean
     @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
-    ModelMapper modelMapper(List<Converter<?, ?>> converters) {
+    public ModelMapper modelMapper(List<Converter<?, ?>> converters) {
         ModelMapper mapper = new ModelMapper();
         if (!CollectionUtils.isEmpty(converters)) {
             converters.forEach(mapper::addConverter);

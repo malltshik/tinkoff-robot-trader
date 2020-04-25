@@ -1,4 +1,4 @@
-package ru.malltshik.trobot.events;
+package ru.malltshik.trobot.listeners.events;
 
 import lombok.Getter;
 import org.springframework.context.ApplicationEvent;

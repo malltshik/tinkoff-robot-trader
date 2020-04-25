@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ru.malltshik.trobot.enums.SignalType;
+import ru.malltshik.trobot.trading.implementation.data.enums.SignalType;
 
 @Data
 @Builder

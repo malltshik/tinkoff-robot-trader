@@ -27,7 +27,6 @@ import java.util.logging.Logger;
 @ConditionalOnProperty(value = "tinkoff.sandbox", havingValue = "false")
 public class TinkoffProductionConfig {
 
-    private final Subscriber<StreamingEvent> listener;
     private final TinkoffProps props;
 
     @Bean
@@ -54,7 +53,9 @@ public class TinkoffProductionConfig {
 
     @Bean
     @Production
-    public OpenApi productionOpenApi(@Production ExecutorService executor, OkHttpOpenApiFactory factory) {
+    public OpenApi productionOpenApi(@Production ExecutorService executor,
+                                     OkHttpOpenApiFactory factory,
+                                     Subscriber<StreamingEvent> listener) {
         OpenApi api = factory.createOpenApiClient(executor);
         api.getStreamingContext().getEventPublisher().subscribe(listener);
         return api;
