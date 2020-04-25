@@ -15,6 +15,7 @@ import ru.malltshik.trobot.trading.implementation.data.AnalyticReport;
 import ru.tinkoff.invest.openapi.OpenApi;
 import ru.tinkoff.invest.openapi.models.market.CandleInterval;
 import ru.tinkoff.invest.openapi.models.market.Orderbook;
+import ru.tinkoff.invest.openapi.models.market.TradeStatus;
 import ru.tinkoff.invest.openapi.models.streaming.StreamingEvent;
 
 import javax.annotation.PostConstruct;
@@ -87,6 +88,10 @@ public class CombinedAnalytic {
     private void orderbookProcess(Orderbook orderbook) {
         if (orderbook.lastPrice == null) {
             log.warn("Orderbook last price is null");
+            return;
+        }
+        if (orderbook.tradeStatus.equals(TradeStatus.NotAvailableForTrading)) {
+            log.info("NotAvailableForTrading status for {}", trader.getConfig());
             return;
         }
         BigDecimal asksDeviation = price.subtract(orderbook.asks.isEmpty() ?
