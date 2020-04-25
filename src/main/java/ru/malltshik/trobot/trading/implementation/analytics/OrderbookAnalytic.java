@@ -7,16 +7,16 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
-import ru.malltshik.trobot.entities.TraderConfig;
+import ru.malltshik.trobot.events.NextOrderbookEvent;
 import ru.malltshik.trobot.trading.Analytic;
-import ru.malltshik.trobot.trading.Signal;
+import ru.malltshik.trobot.trading.Trader;
 import ru.tinkoff.invest.openapi.OpenApi;
 import ru.tinkoff.invest.openapi.models.streaming.StreamingEvent.Orderbook;
-import ru.tinkoff.invest.openapi.models.streaming.StreamingRequest;
 
 import javax.annotation.PostConstruct;
 import java.util.Objects;
-import java.util.function.Consumer;
+
+import static ru.tinkoff.invest.openapi.models.streaming.StreamingRequest.subscribeOrderbook;
 
 @Slf4j
 @Service
@@ -24,24 +24,24 @@ import java.util.function.Consumer;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class OrderbookAnalytic implements Analytic {
 
-    private final Consumer<Signal> consumer;
-    private final TraderConfig config;
+    private final Trader trader;
 
     @Autowired
     private OpenApi api;
 
     @PostConstruct
     private void init() {
-        api.getStreamingContext().sendRequest(StreamingRequest.subscribeOrderbook(config.getFigi(), 10));
+        api.getStreamingContext().sendRequest(subscribeOrderbook(trader.getConfig().getFigi(), 20));
     }
 
-    @EventListener(Orderbook.class)
-    public void nextOrderbook(Orderbook event) {
-        Objects.requireNonNull(event);
-        if (!Objects.equals(event.getFigi(), config.getFigi())) {
+    @EventListener(NextOrderbookEvent.class)
+    public void nextOrderbook(NextOrderbookEvent event) {
+        log.info("Receive new orderbook event {}", event);
+        Orderbook orderbook = event.getData();
+        if (!Objects.equals(orderbook.getFigi(), trader.getConfig().getFigi())) {
             return;
         }
-        // TODO analize orderbook and send signal
-        // consumer.accept(new OrderbookSignal(0));
+        // TODO process
+        // trader.process(Intention.SELL);
     }
 }

@@ -17,6 +17,8 @@ import ru.tinkoff.invest.openapi.models.streaming.StreamingEvent;
 import ru.tinkoff.invest.openapi.okhttp.OkHttpOpenApiFactory;
 
 import java.util.concurrent.ExecutorService;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics.monitor;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
@@ -34,7 +36,8 @@ public class TinkoffSandboxConfig {
     @Bean
     @Sandbox
     public OkHttpOpenApiFactory okHttpOpenApiFactory() {
-        return new OkHttpOpenApiFactory(props.getToken(), getLogger("Tinkoff-OpenAPI-Logger-Sandbox"));
+        Logger logger = getLogger("Tinkoff-OpenAPI-Logger-Sandbox");
+        return new OkHttpOpenApiFactory(props.getToken(), logger);
     }
 
     @Bean

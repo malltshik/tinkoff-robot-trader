@@ -10,10 +10,6 @@ public interface TraderManager {
     @NotNull
     Trader register(@NotNull TraderConfig config);
 
-    void unregister(@NotNull Trader node);
-
-    void unregister(@NotNull TraderConfig config);
-
     void unregister(@NotNull Long key);
 
     @NotNull

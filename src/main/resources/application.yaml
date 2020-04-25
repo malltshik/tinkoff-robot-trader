@@ -3,6 +3,8 @@ spring:
     name: trobot
   profiles:
     active: local
+  jpa:
+    open-in-view: false
   datasource:
     url: jdbc:postgresql://localhost:5432/trobot
     username: postgres

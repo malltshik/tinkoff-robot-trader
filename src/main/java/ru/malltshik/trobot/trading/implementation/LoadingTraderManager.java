@@ -9,9 +9,12 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 import ru.malltshik.trobot.entities.TraderConfig;
+import ru.malltshik.trobot.exceptions.InstrumentNotFoundException;
 import ru.malltshik.trobot.repositories.TraderConfigRepository;
 import ru.malltshik.trobot.trading.Trader;
 import ru.malltshik.trobot.trading.TraderManager;
+import ru.tinkoff.invest.openapi.OpenApi;
+import ru.tinkoff.invest.openapi.models.market.Instrument;
 
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;
@@ -29,6 +32,7 @@ public class LoadingTraderManager implements TraderManager {
 
     private final TraderConfigRepository configRepository;
     private final ApplicationContext applicationContext;
+    private final OpenApi openApi;
 
     private AsyncLoadingCache<Long, Trader> cache;
     private Set<Long> keys = new HashSet<>();
@@ -45,6 +49,7 @@ public class LoadingTraderManager implements TraderManager {
                     Optional<TraderConfig> config = configRepository.findById(key);
                     return config.map(c -> createNode(c).join()).orElse(null);
                 });
+        configRepository.findAll().forEach(this::register);
     }
 
     @NotNull
@@ -59,21 +64,10 @@ public class LoadingTraderManager implements TraderManager {
     }
 
     @Override
-    public void unregister(@NotNull Trader node) {
-        Objects.requireNonNull(node);
-        unregister(node.getConfig());
-    }
-
-    @Override
-    public void unregister(@NotNull TraderConfig config) {
-        Objects.requireNonNull(config);
-        unregister(config.getId());
-    }
-
-    @Override
     public void unregister(@NotNull Long key) {
         Objects.requireNonNull(key);
         cache.synchronous().invalidate(key);
+        configRepository.deleteById(key);
     }
 
     @NotNull
@@ -92,6 +86,16 @@ public class LoadingTraderManager implements TraderManager {
     @NotNull
     private CompletableFuture<Trader> createNode(@NotNull TraderConfig config) {
         Objects.requireNonNull(config);
-        return CompletableFuture.supplyAsync(() -> applicationContext.getBean(Trader.class, config));
+
+        Optional<Instrument> instrument = openApi.getMarketContext()
+                .searchMarketInstrumentByFigi(config.getFigi()).join();
+
+        if (instrument.isPresent()) {
+            return CompletableFuture.supplyAsync(() ->
+                    applicationContext.getBean(Trader.class, instrument.get(), config));
+        } else {
+            configRepository.deleteById(config.getId());
+            throw new InstrumentNotFoundException(config.getFigi());
+        }
     }
 }
