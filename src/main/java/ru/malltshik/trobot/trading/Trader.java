@@ -6,9 +6,6 @@ import ru.malltshik.trobot.trading.implementation.data.TraderState;
 public interface Trader {
 
     @NotNull
-    Long getKey();
-
-    @NotNull
     TraderState getState();
 
     boolean start();

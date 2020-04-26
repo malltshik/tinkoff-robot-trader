@@ -1,21 +1,23 @@
-package ru.malltshik.trobot.listeners;
+package ru.malltshik.trobot.configuration;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import ru.malltshik.trobot.listeners.events.NextCandleEvent;
-import ru.malltshik.trobot.listeners.events.NextErrorEvent;
-import ru.malltshik.trobot.listeners.events.NextInstrumentInfoEvent;
-import ru.malltshik.trobot.listeners.events.NextOrderbookEvent;
+import ru.malltshik.trobot.events.NextCandleEvent;
+import ru.malltshik.trobot.events.NextErrorEvent;
+import ru.malltshik.trobot.events.NextInstrumentInfoEvent;
+import ru.malltshik.trobot.events.NextOrderbookEvent;
 import ru.tinkoff.invest.openapi.models.streaming.StreamingEvent;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class OpenApiEventListener implements Subscriber<StreamingEvent> {
+@ConditionalOnProperty(value = "features.tinkoff-listener", havingValue = "true")
+public class TinkoffEventListenerConfig implements Subscriber<StreamingEvent> {
 
     private final ApplicationEventPublisher publisher;
 

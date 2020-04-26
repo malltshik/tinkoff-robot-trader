@@ -14,6 +14,8 @@ import ru.tinkoff.invest.openapi.models.market.Instrument;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TraderState {
+    private Long id;
+    private String figi;
     private Instrument instrument;
     private TraderConfig config;
     private TraderStatus status;

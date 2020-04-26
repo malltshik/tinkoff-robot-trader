@@ -5,6 +5,7 @@ import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.reactivestreams.Subscriber;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -55,9 +56,11 @@ public class TinkoffProductionConfig {
     @Production
     public OpenApi productionOpenApi(@Production ExecutorService executor,
                                      OkHttpOpenApiFactory factory,
-                                     Subscriber<StreamingEvent> listener) {
+                                     @Autowired(required = false) Subscriber<StreamingEvent> listener) {
         OpenApi api = factory.createOpenApiClient(executor);
-        api.getStreamingContext().getEventPublisher().subscribe(listener);
+        if (listener != null) {
+            api.getStreamingContext().getEventPublisher().subscribe(listener);
+        }
         return api;
     }
 

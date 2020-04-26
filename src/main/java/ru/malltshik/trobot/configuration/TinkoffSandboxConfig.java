@@ -4,6 +4,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.reactivestreams.Subscriber;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -47,7 +48,7 @@ public class TinkoffSandboxConfig {
     @Sandbox
     public OpenApi sandboxOpenApi(@Sandbox ExecutorService executor,
                                   OkHttpOpenApiFactory factory,
-                                  Subscriber<StreamingEvent> listener) {
+                                  @Autowired(required = false) Subscriber<StreamingEvent> listener) {
         SandboxOpenApi api = factory.createSandboxOpenApiClient(executor);
         api.getSandboxContext().performRegistration(null).join();
         api.getSandboxContext().clearAll(null).join();
@@ -56,7 +57,9 @@ public class TinkoffSandboxConfig {
                 .map(c -> new CurrencyBalance(c.getCurrency(), c.getBalance()))
                 .forEach(c -> api.getSandboxContext().setCurrencyBalance(c, null).join());
 
-        api.getStreamingContext().getEventPublisher().subscribe(listener);
+        if (listener != null) {
+            api.getStreamingContext().getEventPublisher().subscribe(listener);
+        }
 
         return api;
     }

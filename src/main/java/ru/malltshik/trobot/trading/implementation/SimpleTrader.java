@@ -37,9 +37,13 @@ public class SimpleTrader implements Trader {
     private TraderConfig config;
     private TraderStatus status;
     private AnalyticReport report;
+    private String figi;
+    private Long id;
 
     public SimpleTrader(Instrument instrument, TraderConfig config) {
+        this.figi = instrument.figi;
         this.instrument = instrument;
+        this.id = config.getId();
         this.config = config;
         this.status = TraderStatus.DOWN;
     }
@@ -59,14 +63,15 @@ public class SimpleTrader implements Trader {
 
     @NotNull
     @Override
-    public Long getKey() {
-        return config.getId();
-    }
-
-    @NotNull
-    @Override
     public TraderState getState() {
-        return TraderState.builder().instrument(instrument).config(config).report(report).status(status).build();
+        return TraderState.builder()
+                .id(id)
+                .figi(figi)
+                .instrument(instrument)
+                .config(config)
+                .report(report)
+                .status(status)
+                .build();
     }
 
     @Override
