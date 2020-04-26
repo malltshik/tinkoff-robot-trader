@@ -15,10 +15,12 @@ import ru.malltshik.trobot.persistance.entities.TraderConfig;
 import ru.malltshik.trobot.persistance.repositories.TraderConfigRepository;
 import ru.malltshik.trobot.trading.Trader;
 import ru.malltshik.trobot.trading.TraderManager;
+import ru.malltshik.trobot.trading.implementation.data.TraderState;
 import ru.malltshik.trobot.web.transport.TraderConfigCreateRequest;
 
 import javax.validation.Valid;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 @RestController
 @RequestMapping("/api/traders")
@@ -29,6 +31,12 @@ public class TraderManagerController {
     private final TraderManager traderManager;
     private final TraderConfigRepository traderConfigRepository;
 
+    @GetMapping
+    public ResponseEntity<?> getAll() {
+        Stream<TraderState> states = traderManager.getAll().stream().map(Trader::getState);
+        return ResponseEntity.ok(states);
+    }
+
     @PostMapping
     public ResponseEntity<?> register(@Valid @RequestBody TraderConfigCreateRequest request) {
         TraderConfig config = mapper.map(request, TraderConfig.class);
@@ -36,20 +44,20 @@ public class TraderManagerController {
         return ResponseEntity.ok(traderManager.register(config).getState());
     }
 
-    @GetMapping("/{id}/state")
+    @GetMapping("/{id}")
     public ResponseEntity<?> state(@PathVariable Long id) {
         Optional<Trader> optional = traderManager.findOne(id);
         return optional.map(t -> ResponseEntity.ok(t.getState())).orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
-    @PostMapping("/{id}/start")
+    @GetMapping("/{id}/start")
     public ResponseEntity<?> start(@PathVariable Long id) {
         Optional<Trader> optional = traderManager.findOne(id);
         optional.ifPresent(Trader::start);
         return optional.map(t -> ResponseEntity.ok(t.getState())).orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
-    @PostMapping("/{id}/stop")
+    @GetMapping("/{id}/stop")
     public ResponseEntity<?> stop(@PathVariable Long id) {
         Optional<Trader> optional = traderManager.findOne(id);
         optional.ifPresent(Trader::stop);
