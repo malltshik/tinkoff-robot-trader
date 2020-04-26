@@ -9,6 +9,8 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 
+import static javax.persistence.GenerationType.SEQUENCE;
+
 @Data
 @Entity
 @Builder
@@ -16,7 +18,7 @@ import javax.persistence.Id;
 @AllArgsConstructor
 public class TraderConfig {
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = SEQUENCE)
     private Long id;
     private String figi;
 }

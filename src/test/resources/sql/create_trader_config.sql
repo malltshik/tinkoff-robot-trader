@@ -1,1 +1,0 @@
-insert into trader_config(id, figi) values (1, '200');

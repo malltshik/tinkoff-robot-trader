@@ -1,8 +1,9 @@
-package ru.malltshik.trobot;
+package ru.malltshik.trobot.configuration;
 
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.testcontainers.shaded.org.apache.commons.lang.StringUtils;
 import ru.tinkoff.invest.openapi.MarketContext;
 import ru.tinkoff.invest.openapi.OpenApi;
 import ru.tinkoff.invest.openapi.OperationsContext;
@@ -46,7 +47,7 @@ public class OpenApiMockConfig {
 
         when(marketContext.searchMarketInstrumentByFigi(anyString())).then(invocation -> {
             String figi = invocation.getArgument(0, String.class);
-            if ("200".equals(figi)) {
+            if (StringUtils.isNotEmpty(figi) && figi.startsWith("200")) {
                 Instrument i = new Instrument(figi, figi, null, null, 1, Currency.USD, figi, InstrumentType.Stock);
                 return CompletableFuture.completedFuture(Optional.of(i));
             } else {
