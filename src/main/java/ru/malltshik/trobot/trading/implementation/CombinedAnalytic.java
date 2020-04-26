@@ -139,10 +139,12 @@ public class CombinedAnalytic {
                 liquidityPer5Min.divide(HUNDRED, BigDecimal.ROUND_HALF_UP), BigDecimal.ROUND_HALF_UP),
                 BigDecimal.ROUND_HALF_UP);
 
-        BigDecimal tax = orderbook.lastPrice.add(priceChange.abs())
-                .multiply(BigDecimal.valueOf(tinkoffProps.getTaxes() / 100));
+        BigDecimal brokerTax = orderbook.lastPrice.add(priceChange.abs())
+                .multiply(BigDecimal.valueOf(tinkoffProps.getBrokerTax() / 100));
+        BigDecimal countryTax = priceChange
+                .multiply(BigDecimal.valueOf(tinkoffProps.getCountryTax() / 100));
 
-        BigDecimal yield = priceChange.subtract(tax);
+        BigDecimal yield = priceChange.subtract(brokerTax.add(countryTax));
 
         AnalyticReport report = AnalyticReport.builder()
                 .lastPrice(orderbook.lastPrice)

@@ -50,9 +50,6 @@ public class TinkoffProps {
      */
     private ThreadPoolConfig threadPoolConfig;
 
-    public double getTaxes() {
-        return brokerTax + countryTax;
-    }
 
     @Data
     public static class ThreadPoolConfig {
