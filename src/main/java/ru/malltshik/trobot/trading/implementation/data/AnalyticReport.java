@@ -20,5 +20,6 @@ public class AnalyticReport {
     private BigDecimal fiveMinChance;
     private BigDecimal priceChange;
     private BigDecimal yieldWithTax;
+    private BigDecimal yieldWithTaxPercents;
     private int direction;
 }

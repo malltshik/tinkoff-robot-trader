@@ -145,11 +145,13 @@ public class CombinedAnalytic {
                 .multiply(BigDecimal.valueOf(tinkoffProps.getCountryTax() / 100));
 
         BigDecimal yield = priceChange.subtract(brokerTax.add(countryTax));
-
+        BigDecimal yieldPercents = yield.divide(orderbook.lastPrice.divide(HUNDRED, BigDecimal.ROUND_HALF_UP),
+                BigDecimal.ROUND_HALF_UP);
         AnalyticReport report = AnalyticReport.builder()
                 .lastPrice(orderbook.lastPrice)
                 .priceChange(priceChange)
                 .yieldWithTax(yield)
+                .yieldWithTaxPercents(yieldPercents)
                 .dsCoefficient(dsCoefficient)
                 .oneMinChance(oneMinChance)
                 .fiveMinChance(fiveMinChanse)
