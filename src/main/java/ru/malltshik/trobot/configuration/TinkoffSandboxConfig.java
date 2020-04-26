@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import ru.malltshik.trobot.configuration.qualifiers.Sandbox;
 import ru.malltshik.trobot.properties.TinkoffProps;
 import ru.tinkoff.invest.openapi.OpenApi;
@@ -26,6 +27,7 @@ import static java.util.logging.Logger.getLogger;
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
+@Profile("!test")
 @ConditionalOnProperty(value = "tinkoff.sandbox", havingValue = "true", matchIfMissing = true)
 public class TinkoffSandboxConfig {
 

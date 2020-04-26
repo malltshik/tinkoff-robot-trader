@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import ru.malltshik.trobot.configuration.qualifiers.Production;
 import ru.malltshik.trobot.properties.TinkoffProps;
@@ -25,6 +26,7 @@ import java.util.logging.Logger;
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
+@Profile("!test")
 @ConditionalOnProperty(value = "tinkoff.sandbox", havingValue = "false")
 public class TinkoffProductionConfig {
 

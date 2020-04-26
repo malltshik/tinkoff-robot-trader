@@ -48,7 +48,7 @@ public class TinkoffProps {
     /**
      * Thread pool configuration for tinkoff OpenAPI
      */
-    private ThreadPoolConfig threadPoolConfig;
+    private ThreadPoolConfig threadPoolConfig = new ThreadPoolConfig();
 
 
     @Data
