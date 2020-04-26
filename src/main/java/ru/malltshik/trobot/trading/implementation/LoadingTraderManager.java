@@ -16,7 +16,6 @@ import ru.malltshik.trobot.persistance.repositories.TraderConfigRepository;
 import ru.malltshik.trobot.trading.Trader;
 import ru.malltshik.trobot.trading.TraderManager;
 import ru.tinkoff.invest.openapi.OpenApi;
-import ru.tinkoff.invest.openapi.models.market.Instrument;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -43,7 +42,7 @@ public class LoadingTraderManager implements TraderManager {
         this.cache = Caffeine.newBuilder()
                 .removalListener((RemovalListener<Long, Trader>) (key, value, cause) -> {
                     log.warn("Removing trading node {} cause {}", key, cause);
-                    if (value != null && value.stop(true)) {
+                    if (value != null && value.stop()) {
                         keys.remove(key);
                     }
                 }).buildAsync(key -> {
@@ -87,16 +86,12 @@ public class LoadingTraderManager implements TraderManager {
     @NotNull
     private CompletableFuture<Trader> createNode(@NotNull TraderConfig config) {
         Objects.requireNonNull(config);
-
-        Optional<Instrument> instrument = openApi.getMarketContext()
-                .searchMarketInstrumentByFigi(config.getFigi()).join();
-
-        if (instrument.isPresent()) {
-            return CompletableFuture.supplyAsync(() ->
-                    applicationContext.getBean(Trader.class, instrument.get(), config));
-        } else {
+        return openApi.getMarketContext().searchMarketInstrumentByFigi(config.getFigi()).thenApply(opt -> {
+            if (opt.isPresent()) {
+                return applicationContext.getBean(Trader.class, opt.get(), config);
+            }
             configRepository.deleteById(config.getId());
             throw new InstrumentNotFoundException(config.getFigi());
-        }
+        });
     }
 }

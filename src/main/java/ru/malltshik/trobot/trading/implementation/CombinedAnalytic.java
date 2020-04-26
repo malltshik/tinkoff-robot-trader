@@ -2,31 +2,38 @@ package ru.malltshik.trobot.trading.implementation;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
-import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import ru.malltshik.trobot.listeners.events.NextCandleEvent;
 import ru.malltshik.trobot.properties.TinkoffProps;
-import ru.malltshik.trobot.trading.Trader;
 import ru.malltshik.trobot.trading.implementation.data.AnalyticReport;
+import ru.malltshik.trobot.trading.implementation.data.AnalyticReport.Forecast;
 import ru.tinkoff.invest.openapi.OpenApi;
 import ru.tinkoff.invest.openapi.models.market.CandleInterval;
 import ru.tinkoff.invest.openapi.models.market.Orderbook;
 import ru.tinkoff.invest.openapi.models.market.TradeStatus;
-import ru.tinkoff.invest.openapi.models.streaming.StreamingEvent;
 
-import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
-import static ru.tinkoff.invest.openapi.models.streaming.StreamingRequest.subscribeCandle;
-import static ru.tinkoff.invest.openapi.models.streaming.StreamingRequest.subscribeOrderbook;
+import static io.micrometer.core.instrument.util.TimeUtils.convert;
+import static java.lang.Double.doubleToLongBits;
+import static java.math.BigDecimal.ROUND_HALF_UP;
+import static java.math.BigDecimal.ZERO;
+import static java.math.BigDecimal.valueOf;
+import static ru.malltshik.trobot.trading.implementation.calc.OrderbookCalc.calcFlatQuantities;
 
 @Slf4j
 @Service
@@ -34,132 +41,113 @@ import static ru.tinkoff.invest.openapi.models.streaming.StreamingRequest.subscr
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class CombinedAnalytic {
 
-    private final static int ORDERBOOK_DEPTH = 20;
     private final static BigDecimal HUNDRED = BigDecimal.valueOf(100);
-
-    private final Trader trader;
 
     @Autowired
     private OpenApi api;
     @Autowired
     private TinkoffProps tinkoffProps;
 
-    private BigDecimal liquidityPer1Min = BigDecimal.ZERO;
-    private BigDecimal liquidityPer5Min = BigDecimal.ZERO;
-    private BigDecimal price = new BigDecimal(0);
+    private boolean active = false;
+    private String figi = null;
+    private Consumer<AnalyticReport> reportRecipient = null;
+    private BigDecimal dayTradingValue = ZERO;
+    private BigDecimal minTradingValue = ZERO;
 
-    @PostConstruct
-    private void init() {
-        api.getStreamingContext().sendRequest(subscribeOrderbook(trader.getConfig().getFigi(), ORDERBOOK_DEPTH));
-        api.getStreamingContext().sendRequest(subscribeCandle(trader.getConfig().getFigi(), CandleInterval.ONE_MIN));
-        api.getStreamingContext().sendRequest(subscribeCandle(trader.getConfig().getFigi(), CandleInterval.FIVE_MIN));
+    public void start(@NotNull String figi, @NotNull Consumer<AnalyticReport> consumer) {
+        Objects.requireNonNull(figi);
+        Objects.requireNonNull(consumer);
+        this.figi = figi;
+        this.reportRecipient = consumer;
+        this.active = true;
+        pullOrderbook();
+        pullCandles();
+    }
+
+    public void stop() {
+        this.figi = null;
+        this.reportRecipient = null;
+        this.active = false;
+        pullOrderbook();
+        pullCandles();
     }
 
     @Scheduled(fixedDelay = 5000)
-    private void pullData() {
-        log.info("Scheduled new pull operation for {}", trader.getConfig());
-        api.getMarketContext().getMarketOrderbook(trader.getConfig().getFigi(), 20)
-                .thenAccept(opt -> opt.ifPresent(this::orderbookProcess));
+    private void pullOrderbook() {
+        if (!active) return;
+        log.info("Scheduled new pull orderbook operation for {}", figi);
+        api.getMarketContext().getMarketOrderbook(figi, 20).thenAccept(opt -> opt.ifPresent(this::orderbookProcess));
     }
 
-    @EventListener(NextCandleEvent.class)
-    public void nextCandle(NextCandleEvent event) {
-        StreamingEvent.Candle candle = event.getData();
-        if (!candle.getFigi().equals(trader.getConfig().getFigi())) {
-            return;
-        }
-        log.info("Catch new candle event {}", candle);
-        updateAverageTradingValue(candle);
+    @Scheduled(fixedDelay = 1000 * 60)
+    private void pullCandles() {
+        if (!active) return;
+        log.info("Scheduled new pull candles operation for {}", figi);
+        OffsetDateTime start = LocalDate.now().atStartOfDay().atOffset(OffsetDateTime.now().getOffset());
+        OffsetDateTime end = start.plusDays(1);
+        api.getMarketContext().getMarketCandles(figi, start, end, CandleInterval.ONE_MIN).thenAccept(opt ->
+                opt.ifPresent(hc -> {
+                    dayTradingValue = hc.candles.stream().map(c -> c.tradesValue).reduce(ZERO, BigDecimal::add);
+                    minTradingValue = dayTradingValue.divide(BigDecimal.valueOf(hc.candles.size()), ROUND_HALF_UP);
+                }));
     }
 
-    private void updateAverageTradingValue(StreamingEvent.Candle candle) {
-        switch (candle.getInterval()) {
-            case ONE_MIN:
-                liquidityPer1Min = candle.getTradingValue()
-                        .add(liquidityPer1Min)
-                        .divide(new BigDecimal(2), BigDecimal.ROUND_UP);
-            case FIVE_MIN:
-                liquidityPer5Min = candle.getTradingValue()
-                        .add(liquidityPer5Min)
-                        .divide(new BigDecimal(2), BigDecimal.ROUND_UP);
-        }
-    }
-
-    private void orderbookProcess(Orderbook orderbook) {
-        if (orderbook.lastPrice == null) {
-            log.warn("Orderbook last price is null");
+    private void orderbookProcess(@NotNull Orderbook ob) {
+        Objects.requireNonNull(ob);
+        if (ob.lastPrice == null) {
+            log.warn("Orderbook last price is null for {}", figi);
             return;
         }
-        if (orderbook.tradeStatus.equals(TradeStatus.NotAvailableForTrading)) {
-            log.info("NotAvailableForTrading status for {}", trader.getConfig());
+        if (ob.tradeStatus.equals(TradeStatus.NotAvailableForTrading)) {
+            log.info("NotAvailableForTrading status for {}", figi);
             return;
         }
-        BigDecimal asksDeviation = price.subtract(orderbook.asks.isEmpty() ?
-                price : orderbook.asks.get(orderbook.asks.size() - 1).price).abs();
-        BigDecimal bidsDeviation = price.subtract(orderbook.bids.isEmpty() ?
-                price : orderbook.bids.get(orderbook.bids.size() - 1).price).abs();
-        BigDecimal maxDeviation = asksDeviation.compareTo(bidsDeviation) > 0 ? asksDeviation : bidsDeviation;
-
-        Map<BigDecimal, BigDecimal> asksMap = orderbook.asks.stream()
-                .collect(Collectors.toMap(k -> k.price, v -> v.quantity));
-        Map<BigDecimal, BigDecimal> bidsMap = orderbook.bids.stream()
-                .collect(Collectors.toMap(k -> k.price, v -> v.quantity));
-
-        BigDecimal startUp = price.add(orderbook.minPriceIncrement);
-        BigDecimal startDown = price.subtract(orderbook.minPriceIncrement);
-        BigDecimal stop = BigDecimal.ZERO;
-        List<BigDecimal> flatQuantity = new ArrayList<>();
-        while (stop.compareTo(maxDeviation) <= 0) {
-            BigDecimal demand = asksMap.getOrDefault(startDown, BigDecimal.valueOf(0));
-            BigDecimal supply = bidsMap.getOrDefault(startUp, BigDecimal.valueOf(0));
-            flatQuantity.add(demand.subtract(supply));
-            startDown = startDown.subtract(orderbook.minPriceIncrement);
-            startUp = startUp.add(orderbook.minPriceIncrement);
-            stop = stop.add(orderbook.minPriceIncrement);
-        }
-        int points = flatQuantity.size();
-        List<BigDecimal> rounds = new ArrayList<>();
-        for (int i = 0; i < points; i++) {
-            BigDecimal round = BigDecimal.ZERO;
-            for (int j = i; j < points; j++) {
-                round = round.add(flatQuantity.get(j).divide(BigDecimal.valueOf(2), BigDecimal.ROUND_HALF_UP));
-            }
-            rounds.add(round);
-        }
-
-        BigDecimal dsCoefficient = rounds.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal priceChange = dsCoefficient.multiply(orderbook.minPriceIncrement);
-
-        BigDecimal oneMinChance = HUNDRED.divide(dsCoefficient.abs().divide(
-                liquidityPer1Min.divide(HUNDRED, BigDecimal.ROUND_HALF_UP), BigDecimal.ROUND_HALF_UP),
-                BigDecimal.ROUND_HALF_UP);
-
-        BigDecimal fiveMinChanse = HUNDRED.divide(dsCoefficient.abs().divide(
-                liquidityPer5Min.divide(HUNDRED, BigDecimal.ROUND_HALF_UP), BigDecimal.ROUND_HALF_UP),
-                BigDecimal.ROUND_HALF_UP);
-
-        BigDecimal brokerTax = orderbook.lastPrice.add(priceChange.abs())
-                .multiply(BigDecimal.valueOf(tinkoffProps.getBrokerTax() / 100));
-        BigDecimal countryTax = priceChange
-                .multiply(BigDecimal.valueOf(tinkoffProps.getCountryTax() / 100));
-
-        BigDecimal yield = priceChange.subtract(brokerTax.add(countryTax));
-        BigDecimal yieldPercents = yield.divide(orderbook.lastPrice.divide(HUNDRED, BigDecimal.ROUND_HALF_UP),
-                BigDecimal.ROUND_HALF_UP);
+        ZonedDateTime now = ZonedDateTime.now();
+        ArrayList<Forecast> forecasts = getForecasts(ob, now);
+        Forecast bestForecast = forecasts.stream().max(Comparator.comparing(Forecast::getProfit)).orElse(null);
         AnalyticReport report = AnalyticReport.builder()
-                .lastPrice(orderbook.lastPrice)
-                .priceChange(priceChange)
-                .yieldWithTax(yield)
-                .yieldWithTaxPercents(yieldPercents)
-                .dsCoefficient(dsCoefficient)
-                .oneMinChance(oneMinChance)
-                .fiveMinChance(fiveMinChanse)
-                .oneMinLiquidity(liquidityPer1Min)
-                .fiveMinLiquidity(liquidityPer5Min)
-                .direction(dsCoefficient.compareTo(BigDecimal.ZERO))
+                .lastPrice(ob.lastPrice).created(now).forecasts(forecasts).bestForecast(bestForecast)
                 .build();
+        reportRecipient.accept(report);
+    }
 
-        trader.getState().setLastReport(report);
+    @NotNull
+    private ArrayList<Forecast> getForecasts(@NotNull Orderbook ob, @NotNull ZonedDateTime now) {
+        Objects.requireNonNull(ob.lastPrice);
+        List<BigDecimal> quantities = calcFlatQuantities(ob);
+        int depth = quantities.size();
+        ArrayList<Forecast> forecasts = new ArrayList<>();
+        for (int i = 0; i < depth; i++) {
+            BigDecimal quantity = quantities.get(i);
+            if (quantity.compareTo(ZERO) == 0) continue;
+            // calc time forecast
+            BigDecimal futurePrice = ob.lastPrice.add(BigDecimal.valueOf(i));
+            BigDecimal tradingValue = futurePrice.multiply(quantity).abs();
+            double min = tradingValue.divide(minTradingValue, ROUND_HALF_UP).doubleValue();
+            double millis = convert(min, TimeUnit.MINUTES, TimeUnit.MILLISECONDS);
+            ZonedDateTime to = now.plus(doubleToLongBits(millis), ChronoUnit.MILLIS);
+            // calc operation profits
+            BigDecimal revenue = ob.minPriceIncrement.multiply(BigDecimal.valueOf(i));
+            BigDecimal countryTax = revenue.divide(valueOf(tinkoffProps.getCountryTax() * 100), ROUND_HALF_UP);
+            BigDecimal operationValue = ob.lastPrice.multiply(valueOf(2)).add(revenue);
+            BigDecimal brokerTax = operationValue.divide(valueOf(tinkoffProps.getBrokerTax() * 100), ROUND_HALF_UP);
+            BigDecimal taxes = countryTax.add(brokerTax);
+            BigDecimal profit = revenue.subtract(taxes);
+            BigDecimal profitPercents = profit.divide(ob.lastPrice.divide(HUNDRED, ROUND_HALF_UP), ROUND_HALF_UP);
+            // build forecast
+            Forecast forecast = Forecast.builder()
+                    .from(now)
+                    .to(to)
+                    .direction(quantity.compareTo(ZERO))
+                    .points(i)
+                    .operationValue(operationValue)
+                    .revenue(revenue)
+                    .taxes(taxes)
+                    .profit(profit)
+                    .profitPercents(profitPercents)
+                    .build();
+            forecasts.add(forecast);
+        }
+        return forecasts;
     }
 }

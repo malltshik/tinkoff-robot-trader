@@ -7,7 +7,6 @@ import lombok.NoArgsConstructor;
 import ru.malltshik.trobot.persistance.entities.TraderConfig;
 import ru.malltshik.trobot.trading.implementation.data.enums.TraderStatus;
 import ru.tinkoff.invest.openapi.models.market.Instrument;
-import ru.tinkoff.invest.openapi.models.market.Orderbook;
 
 
 @Data
@@ -15,9 +14,8 @@ import ru.tinkoff.invest.openapi.models.market.Orderbook;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TraderState {
+    private Instrument instrument;
     private TraderConfig config;
     private TraderStatus status;
-    private Instrument instrument;
-    private Orderbook lastOrderbook;
-    private AnalyticReport lastReport;
+    private AnalyticReport report;
 }
