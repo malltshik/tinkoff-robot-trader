@@ -18,7 +18,7 @@ import static org.junit.Assert.assertThat;
 
 
 @Transactional
-@Sql("classpath:/sql/TraderManagerIT.sql")
+@Sql("classpath:/sql/create_trader_config.sql")
 public class TraderManagerIT extends BaseIT {
 
     @Autowired
