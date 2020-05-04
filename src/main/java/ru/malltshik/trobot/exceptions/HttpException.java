@@ -1,9 +1,9 @@
 package ru.malltshik.trobot.exceptions;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import javafx.util.Pair;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.springframework.data.util.Pair;
 import org.springframework.http.HttpStatus;
 
 @Data
